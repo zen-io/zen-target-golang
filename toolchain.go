@@ -2,8 +2,8 @@ package golang
 
 // import (
 // 	"fmt"
-// 	"gitlab.com/hidothealth/platform/ahoy/src/target"
-// 	"gitlab.com/hidothealth/platform/ahoy/src/steps/own"
+// 	"github.com/zen-io/zen-core/target"
+// 	"github.com/zen-io/zen/src/zen/own"
 
 // 	"github.com/mitchellh/mapstructure"
 // )
@@ -18,7 +18,7 @@ package golang
 // 	Visibility []string          `mapstructure:"visibility"`
 // }
 
-// func (gtc GolangToolchainConfig) GetTargets(block interface{}, tcc *ahoy_targets.TargetConfigContext) ([]*ahoy_targets.Target, error) {
+// func (gtc GolangToolchainConfig) GetTargets(block interface{}, tcc *zen_targets.TargetConfigContext) ([]*zen_targets.Target, error) {
 // 	mapstructure.Decode(block, &gtc)
 
 // 	targets, err := own.RemoteFileConfig{

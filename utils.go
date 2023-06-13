@@ -2,16 +2,17 @@ package golang
 
 import (
 	"fmt"
-	"io"
 	"os/exec"
+
+	zen_targets "github.com/zen-io/zen-core/target"
 )
 
-func runTidy(cwd string, env []string, logger io.Writer) error {
+func runTidy(target *zen_targets.Target) error {
 	cmd := exec.Command("go", "mod", "tidy")
-	cmd.Dir = cwd
-	cmd.Env = env
-	cmd.Stdout = logger
-	cmd.Stderr = logger
+	cmd.Dir = target.Cwd
+	cmd.Env = target.GetEnvironmentVariablesList()
+	cmd.Stdout = target
+	cmd.Stderr = target
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("executing tidy: %w", err)
 	}
