@@ -2,8 +2,6 @@ package golang
 
 import (
 	"fmt"
-	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -11,12 +9,20 @@ import (
 )
 
 type GolangBinaryConfig struct {
-	zen_targets.BaseFields `mapstructure:",squash"`
-	Srcs                   []string `mapstructure:"srcs"`
-	Out                    *string  `mapstructure:"out"`
-	Path                   *string  `mapstructure:"path"`
-	Flags                  string   `mapstructure:"flags"`
-	Toolchain              *string  `mapstructure:"toolchain"`
+	Name        string            `mapstructure:"name" desc:"Name for the target"`
+	Description string            `mapstructure:"desc" desc:"Target description"`
+	Labels      []string          `mapstructure:"labels" desc:"Labels to apply to the targets"` //
+	Deps        []string          `mapstructure:"deps" desc:"Build dependencies"`
+	PassEnv     []string          `mapstructure:"pass_env" desc:"List of environment variable names that will be passed from the OS environment, they are part of the target hash"`
+	SecretEnv   []string          `mapstructure:"secret_env" desc:"List of environment variable names that will be passed from the OS environment, they are not used to calculate the target hash"`
+	Env         map[string]string `mapstructure:"env" desc:"Key-Value map of static environment variables to be used"`
+	Tools       map[string]string `mapstructure:"tools" desc:"Key-Value map of tools to include when executing this target. Values can be references"`
+	Visibility  []string          `mapstructure:"visibility" desc:"List of visibility for this target"`
+	Srcs        []string          `mapstructure:"srcs"`
+	Out         *string           `mapstructure:"out"`
+	Path        *string           `mapstructure:"path"`
+	Flags       string            `mapstructure:"flags"`
+	Toolchain   *string           `mapstructure:"toolchain"`
 }
 
 func (gb GolangBinaryConfig) GetTargets(tcc *zen_targets.TargetConfigContext) ([]*zen_targets.Target, error) {
@@ -55,34 +61,17 @@ func (gb GolangBinaryConfig) GetTargets(tcc *zen_targets.TargetConfigContext) ([
 					}
 
 					target.Env["ZEN_DEBUG_CMD"] = fmt.Sprintf("%s/bin/go build -o %s %s", target.Tools["golang"], filepath.Join(target.Cwd, *gb.Out), gb.Flags)
-					if runCtx.Shell {
-						if gb.Path != nil {
-							target.Cwd = filepath.Join(target.Cwd, *gb.Path)
-						}
+					if gb.Path != nil {
+						target.Cwd = filepath.Join(target.Cwd, *gb.Path)
 					}
 
 					return nil
 				},
 				Run: func(target *zen_targets.Target, runCtx *zen_targets.RuntimeContext) error {
-					if gb.Path != nil {
-						target.Cwd = filepath.Join(target.Cwd, *gb.Path)
-					}
-
-					if err := runTidy(target); err != nil {
+					if err := target.Exec([]string{"go", "mod", "tidy"}, "tidy"); err != nil {
 						return err
 					}
-
-					spl := strings.Split(target.Env["ZEN_DEBUG_CMD"], " ")
-					cmd := exec.Command(spl[0], spl[1:]...)
-					cmd.Dir = target.Cwd
-					cmd.Env = target.GetEnvironmentVariablesList()
-					cmd.Stdout = os.Stdout
-					cmd.Stderr = os.Stderr
-					if err := cmd.Run(); err != nil {
-						return fmt.Errorf("executing build: %w", err)
-					}
-
-					return nil
+					return target.Exec(strings.Split(target.Env["ZEN_DEBUG_CMD"], " "), "go build")
 				},
 			}),
 		),
